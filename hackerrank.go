@@ -8,6 +8,17 @@ import (
 	"strings"
 )
 
+func readInt(reader *bufio.Reader) int {
+	line, _ := reader.ReadString('\n')
+	x, _ := strconv.Atoi(strings.Trim(line, "\n"))
+	return x
+}
+
+func readStr(reader *bufio.Reader) string {
+	line, _ := reader.ReadString('\n')
+	return strings.Trim(line, "\n")
+}
+
 func splitInt(line string) (rowInt []int) {
 	row := strings.Split(line, " ")
 	rowInt = make([]int, len(row))
@@ -112,6 +123,104 @@ func timeconv() {
 	fmt.Println(strings.Join(arr, ":"))
 }
 
+// https://www.hackerrank.com/challenges/angry-professor
+func angryprof() {
+	reader := bufio.NewReader(os.Stdin)
+	line, _ := reader.ReadString('\n')
+	t, _ := strconv.Atoi(strings.Trim(line, "\n"))
+
+	for i := 0; i < t; i++ {
+		// Read in N and K
+		line, _ := reader.ReadString('\n')
+		row := strings.Split(strings.Trim(line, "\n"), " ")
+		strconv.Atoi(row[0])
+		k, _ := strconv.Atoi(row[1])
+
+		// Read in the students
+		line, _ = reader.ReadString('\n')
+		var nArrived int
+		for _, s := range splitInt(strings.Trim(line, "\n")) {
+			if s <= 0 {
+				nArrived++
+			}
+		}
+
+		if nArrived >= k {
+			fmt.Println("NO")
+		} else {
+			fmt.Println("YES")
+		}
+	}
+}
+
+// https://www.hackerrank.com/challenges/sherlock-and-the-beast
+func sherlockbeast() {
+	reader := bufio.NewReader(os.Stdin)
+	t := readInt(reader)
+
+	for i := 0; i < t; i++ {
+		line, _ := reader.ReadString('\n')
+		n, _ := strconv.Atoi(strings.Trim(line, "\n"))
+
+		var quot int
+		for n%3 != 0 {
+			n -= 5
+			quot += 5
+		}
+		if n < 0 {
+			fmt.Println(-1)
+		} else {
+			fmt.Printf(
+				"%s%s\n",
+				strings.Repeat("5", n),
+				strings.Repeat("3", quot))
+		}
+	}
+}
+
+// https://www.hackerrank.com/challenges/utopian-tree
+func utopiantree() {
+	cycle := func(x int, spring bool) int {
+		if spring {
+			return 2 * x
+		}
+		return x + 1
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+	t := readInt(reader)
+
+	for i := 0; i < t; i++ {
+		h := 1
+		ncycles := readInt(reader)
+		spring := true
+		for j := 0; j < ncycles; j++ {
+			h = cycle(h, spring)
+			spring = !spring
+		}
+		fmt.Println(h)
+	}
+}
+
+// https://www.hackerrank.com/challenges/find-digits
+func finddigits() {
+	reader := bufio.NewReader(os.Stdin)
+	t := readInt(reader)
+
+	for i := 0; i < t; i++ {
+		nStr := readStr(reader)
+		n, _ := strconv.Atoi(nStr)
+		var count int
+		for _, c := range nStr {
+			d := int(c - '0')
+			if d != 0 && n%d == 0 {
+				count++
+			}
+		}
+		fmt.Println(count)
+	}
+}
+
 func main() {
-	timeconv()
+	finddigits()
 }
