@@ -81,7 +81,7 @@ func main() {
 }
 ```
 
-### Flowcontrol [link](https://tour.golang.org/flowcontrol/1)
+#### Flowcontrol [link](https://tour.golang.org/flowcontrol/1)
 
 - `if` and `for` require braces, but the conditional expressions do not require parens
 
@@ -122,7 +122,7 @@ func main() {
 }
 ```
 
-### More types: structs, slices, and maps
+#### More types: structs, slices, and maps
 
 - Pointers but no pointer arithmetic
 
@@ -136,14 +136,18 @@ import "fmt"
 type Point2D struct {
 	X int
 	Y int
+	Z int
 }
 
 func main() {
-	p := Point2D{3, 4}
+	p := Point2D{3, 4, 5}
 	q := &p
-	q.X = 100
-	p.Y = 200
-	fmt.Println(v.X)
+	r := p
+	p.X = 100
+	q.Y = 200
+	r.Z = 300
+	fmt.Println(p)
+	fmt.Println(r)
 }
 ```
 
@@ -248,3 +252,241 @@ func main() {
 }
 ```
 
+### Methods and Interfaces
+
+- No classes in Go
+
+- Implement methods on types using special *receiver* argument
+  
+  - Only allowed for types that are defined in same package as the method
+  
+  - Pointer receivers (receivers passed in with `*`) can modify value of original receiver (object), wherease value receivers are just copies of original
+  
+  - Methods automatically convert receivers if the method signature requires pointer receiver, but if using just simple functions that require pointer param, then user must pass in the argument with `&`
+
+- Interfaces - set of methods decoupled from the implementation packages
+
+	- Declare a variable of the interface type, and later assign a value to it where the value is an instance of a type that implements the methods described in the interface
+
+``` go
+package main
+
+import (
+	"fmt"
+	"math"
+)
+
+type Point2D struct {
+	X, Y float64
+}
+
+func (p Point2D) Dist(q Point2D) float64 {
+	return math.Sqrt(math.Pow(p.X - q.X, 2) + math.Pow(p.Y - q.Y, 2))
+}
+
+type MyFloat float64
+
+func (f MyFloat) Abs() float64 {
+	if f < 0 {
+		return float64(-f)
+	}
+	return float64(f)
+}
+
+// Interface
+type Abser interface {
+	Abs() float64
+}
+
+func main() {
+	p1 := Point2D{0, 100}
+	p2 := Point2D{100, 100}
+	fmt.Println(p1.Dist(p2))
+	
+	f := MyFloat(-math.Sqrt2)
+	fmt.Println(f.Abs())
+	
+	var a Abser
+	a = f  // Allowed since MyFloat implements Abser
+}
+```
+
+- Exercise: Stringers
+
+``` go
+package main
+
+import "fmt"
+
+type IPAddr [4]byte
+
+// TODO: Add a "String() string" method to IPAddr.
+func (ip *IPAddr) String() string {
+	return fmt.Sprintf("%v.%v.%v.%v", ip[0], ip[1], ip[2], ip[3])
+}
+
+func main() {
+	addrs := map[string]IPAddr{
+		"loopback":  {127, 0, 0, 1},
+		"googleDNS": {8, 8, 8, 8},
+	}
+	for n, a := range addrs {
+		fmt.Printf("%v: %v\n", n, &a)
+	}
+}
+```
+
+- Exercise: Errors
+
+``` go
+package main
+
+import (
+	"fmt"
+	"math"
+)
+
+type ErrNegativeSqrt float64
+
+func (e ErrNegativeSqrt) Error() string {
+	return fmt.Sprintf("cannot Sqrt negative number: %v", float64(e))
+}
+
+func Sqrt(x float64) (float64, error) {
+	if x < 0 {return x, ErrNegativeSqrt(x)}
+	return math.Sqrt(x), nil
+}
+
+func main() {
+	fmt.Println(Sqrt(2))
+	fmt.Println(Sqrt(-2))
+}
+```
+
+- Exercise: Readers
+
+``` go
+package main
+
+import "golang.org/x/tour/reader"
+
+type MyReader struct{}
+
+// TODO: Add a Read([]byte) (int, error) method to MyReader.
+func (r MyReader) Read(b []byte) (n int, err error) {
+	for i := 0; i < 8; i++ {
+		b[i] = 'A'
+	}
+	return 8, nil
+}
+
+
+func main() {
+	reader.Validate(MyReader{})
+}
+```
+
+- Exercise: rot13Reader
+
+``` go
+package main
+
+import (
+	"io"
+	"os"
+	"strings"
+)
+
+type rot13Reader struct {
+	r io.Reader
+}
+
+func (rot *rot13Reader) Read(b []byte) (n int, err error) {
+	n, err = rot.r.Read(b)
+	for i := 0; i < n; i++ {
+		if ('a' <= b[i] && b[i] <= 'm') || ('A' <= b[i] && b[i] <= 'M') {
+			b[i] = b[i] + 13
+		} else if ('n' <= b[i] && b[i] <= 'z') || ('N' <= b[i] && b[i] <= 'Z') {
+			b[i] = b[i] - 13
+		}
+	}
+	return n, err
+}
+
+func main() {
+	s := strings.NewReader("Lbh penpxrq gur pbqr!")
+	r := rot13Reader{s}
+	io.Copy(os.Stdout, &r)
+}
+```
+
+- Exercise: HTTP Handlers
+
+``` go
+package main
+
+import (
+	"log"
+	"net/http"
+	"fmt"
+)
+
+type String string
+
+type Struct struct {
+	Greeting string
+	Punct    string
+	Who      string
+}
+
+func (h String) ServeHTTP(
+	w http.ResponseWriter,
+	r *http.Request) {
+	fmt.Fprint(w, string(h))
+}
+
+func (h *Struct) ServeHTTP(
+	w http.ResponseWriter,
+	r *http.Request) {
+	fmt.Fprint(w, h)
+}
+
+func main() {
+	// your http.Handle calls here
+	http.Handle("/string", String("I'm a frayed knot."))
+	http.Handle("/struct", &Struct{"Hello", ":", "Gophers!"})
+	log.Fatal(http.ListenAndServe("localhost:4000", nil))
+}
+```
+
+- Exercise: Images
+
+``` go
+package main
+
+import (
+	"golang.org/x/tour/pic"
+	"image"
+	"image/color"
+)
+
+type Image struct{}
+
+func (im *Image) ColorModel() color.Model {
+	return color.RGBAModel
+}
+
+func (im *Image) Bounds() image.Rectangle {
+	return image.Rect(0, 0, 100, 100)
+}
+
+func (im *Image) At(x, y int) color.Color {
+	v := uint8((x + y) / 2)
+	return color.RGBA{v, v, 128, 255}
+}
+
+func main() {
+	m := Image{}
+	pic.ShowImage(&m)
+}
+```
