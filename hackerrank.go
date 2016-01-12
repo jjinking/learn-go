@@ -94,6 +94,24 @@ func staircase() {
 	}
 }
 
-func main() {
+// https://www.hackerrank.com/challenges/time-conversion
+func timeconv() {
+	reader := bufio.NewReader(os.Stdin)
+	line, _ := reader.ReadString('\n')
+	line = strings.Trim(line, "\n")
+	arr := strings.Split(line, ":")
+	hour := arr[0]
+	ampm := arr[2][2:]
+	arr[2] = arr[2][:2]
+	if hour == "12" && ampm == "AM" {
+		arr[0] = "00"
+	} else if hour != "12" && ampm == "PM" {
+		t, _ := strconv.Atoi(hour)
+		arr[0] = strconv.Itoa(t + 12)
+	}
+	fmt.Println(strings.Join(arr, ":"))
+}
 
+func main() {
+	timeconv()
 }
