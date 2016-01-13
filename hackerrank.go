@@ -3,28 +3,58 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
 	"strconv"
 	"strings"
 )
 
-func readInt(reader *bufio.Reader) int {
+// Read first line of text containing a single integer from standard input
+func readFirstIntLine() (int, *bufio.Reader) {
+	reader := bufio.NewReader(os.Stdin)
+	line, _ := reader.ReadString('\n')
+	x, _ := strconv.Atoi(strings.Trim(line, "\n"))
+	return x, reader
+}
+
+// Read next line of text containing a single integer
+func readNextIntLine(reader *bufio.Reader) int {
 	line, _ := reader.ReadString('\n')
 	x, _ := strconv.Atoi(strings.Trim(line, "\n"))
 	return x
 }
 
-func readStr(reader *bufio.Reader) string {
+// Read first line of text and return as string
+func readNextStrLine(reader *bufio.Reader) string {
 	line, _ := reader.ReadString('\n')
 	return strings.Trim(line, "\n")
 }
 
+// Read next line of text containing numbers and return list of integers
+func readNextIntsLine(reader *bufio.Reader) (rowInt []int) {
+	line, _ := reader.ReadString('\n')
+	return splitInt(strings.Trim(line, "\n"))
+}
+
+// Split a string containing space-separated list of integers
 func splitInt(line string) (rowInt []int) {
 	row := strings.Split(line, " ")
 	rowInt = make([]int, len(row))
 	for i, v := range row {
 		x, _ := strconv.Atoi(v)
 		rowInt[i] = x
+	}
+	return
+}
+
+// Minimum of a slice of ints
+func minInt(xs []int) (minVal int, minIdx int) {
+	minVal = xs[minIdx]
+	for i := 1; i < len(xs); i++ {
+		if xs[i] < minVal {
+			minVal = xs[i]
+			minIdx = i
+		}
 	}
 	return
 }
@@ -49,17 +79,12 @@ func arraysum() {
 }
 
 func diagdiff() {
-	reader := bufio.NewReader(os.Stdin)
-
 	// Read in first line
-	line, _ := reader.ReadString('\n')
-	line = strings.Trim(line, "\n")
-	n, _ := strconv.Atoi(line)
+	n, reader := readFirstIntLine()
 
 	var d1Sum, d2Sum int
 	for i := 0; i < n; i++ {
-		line, _ := reader.ReadString('\n')
-		row := splitInt(strings.Trim(line, "\n"))
+		row := readNextIntsLine(reader)
 		d1Sum += row[i]
 		d2Sum += row[n-i-1]
 	}
@@ -97,9 +122,7 @@ func plusminus() {
 
 // https://www.hackerrank.com/challenges/staircase
 func staircase() {
-	reader := bufio.NewReader(os.Stdin)
-	line, _ := reader.ReadString('\n')
-	n, _ := strconv.Atoi(line)
+	n, _ := readFirstIntLine()
 	for i := 0; i < n; i++ {
 		fmt.Printf("%s%s\n", strings.Repeat(" ", n-i-1), strings.Repeat("#", i+1))
 	}
@@ -125,9 +148,7 @@ func timeconv() {
 
 // https://www.hackerrank.com/challenges/angry-professor
 func angryprof() {
-	reader := bufio.NewReader(os.Stdin)
-	line, _ := reader.ReadString('\n')
-	t, _ := strconv.Atoi(strings.Trim(line, "\n"))
+	t, reader := readFirstIntLine()
 
 	for i := 0; i < t; i++ {
 		// Read in N and K
@@ -155,8 +176,7 @@ func angryprof() {
 
 // https://www.hackerrank.com/challenges/sherlock-and-the-beast
 func sherlockbeast() {
-	reader := bufio.NewReader(os.Stdin)
-	t := readInt(reader)
+	t, reader := readFirstIntLine()
 
 	for i := 0; i < t; i++ {
 		line, _ := reader.ReadString('\n')
@@ -187,12 +207,11 @@ func utopiantree() {
 		return x + 1
 	}
 
-	reader := bufio.NewReader(os.Stdin)
-	t := readInt(reader)
+	t, reader := readFirstIntLine()
 
 	for i := 0; i < t; i++ {
 		h := 1
-		ncycles := readInt(reader)
+		ncycles := readNextIntLine(reader)
 		spring := true
 		for j := 0; j < ncycles; j++ {
 			h = cycle(h, spring)
@@ -204,11 +223,10 @@ func utopiantree() {
 
 // https://www.hackerrank.com/challenges/find-digits
 func finddigits() {
-	reader := bufio.NewReader(os.Stdin)
-	t := readInt(reader)
+	t, reader := readFirstIntLine()
 
 	for i := 0; i < t; i++ {
-		nStr := readStr(reader)
+		nStr := readNextStrLine(reader)
 		n, _ := strconv.Atoi(nStr)
 		var count int
 		for _, c := range nStr {
@@ -221,6 +239,42 @@ func finddigits() {
 	}
 }
 
+// https://www.hackerrank.com/challenges/sherlock-and-squares
+func sherlocksquares() {
+	t, reader := readFirstIntLine()
+
+	for i := 0; i < t; i++ {
+		row := readNextIntsLine(reader)
+		a, b := row[0], row[1]
+		start := int(math.Sqrt(float64(a)))
+		end := int(math.Sqrt(float64(b)))
+		var counter int
+		for x := start; x <= end; x++ {
+			xSq := x * x
+			if a <= xSq && xSq <= b {
+				counter++
+			}
+		}
+		fmt.Println(counter)
+	}
+}
+
+func servicelane() {
+	reader := bufio.NewReader(os.Stdin)
+	row := readNextIntsLine(reader)
+	_, t := row[0], row[1]
+
+	widths := readNextIntsLine(reader)
+
+	var i, j int
+	for k := 0; k < t; k++ {
+		row = readNextIntsLine(reader)
+		i, j = row[0], row[1]
+		minVal, _ := minInt(widths[i : j+1])
+		fmt.Println(minVal)
+	}
+}
+
 func main() {
-	finddigits()
+	servicelane()
 }

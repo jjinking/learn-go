@@ -490,3 +490,190 @@ func main() {
 	pic.ShowImage(&m)
 }
 ```
+
+## Concurrency
+
+- Goroutines are lightweight threads. Start new threads using keyword `go`
+
+- Send and receive values through **channels** using the `<-` operator
+
+	- Create channels like: `ch := make(chan int, buffersize)`
+	
+	- Sends and receives block until other side is ready
+	
+	- Channels should be closed by the sender, to terminate a `range` loop
+	
+``` go
+ch <- v    // Send v to channel ch
+v := <-ch  // Receive from ch, and
+           // assign value to v
+```
+
+- `select` statement - wait on multiple communication operations
+
+	- Blocks until a case is ready to run, randomly selects from runnable cases and runs it
+	
+	- Use `default` case to do something if all the other cases are blocking
+
+- Exercise: Equivalent Binary Trees
+
+``` go
+package main
+
+import "fmt"
+import "golang.org/x/tour/tree"
+
+// Walk walks the tree t sending all values
+// from the tree to the channel ch.
+// Uses iterative in-order traversal of the binary search tree
+func Walk(t *tree.Tree, ch chan int, name string) {
+	currNode := t
+	var stack []*tree.Tree
+	for len(stack) > 0 || currNode != nil {
+		if currNode != nil {
+			stack = append(stack, currNode)
+			currNode = currNode.Left
+		} else {
+			// Pop stack
+			currNode, stack = stack[len(stack)-1], stack[:len(stack)-1]
+			ch <- currNode.Value
+			fmt.Println(name, currNode.Value)
+			currNode = currNode.Right
+		}
+	}
+	close(ch)
+}
+
+// Same determines whether the trees
+// t1 and t2 contain the same values.
+func Same(t1, t2 *tree.Tree) bool {
+	ch1 := make(chan int)
+	ch2 := make(chan int)
+	go Walk(t1, ch1, "t1")
+	go Walk(t2, ch2, "t2")
+	for i := 0; i < 10; i++ {
+		v1:= <- ch1
+		v2:= <- ch2
+		if v1 != v2 {
+			return false
+		}
+	}
+	return true
+}
+
+func main() {
+	fmt.Println(Same(tree.New(1), tree.New(1)))
+	fmt.Println(Same(tree.New(1), tree.New(2)))
+}
+```
+
+- Use `sync` module for mutual exclusion, i.e. `sync.Mutex`
+  
+  - *Lock* and *unlock* around blocks of code to make it thread safe
+  
+  - *Unlock* can be used with `defer`
+  
+  
+- Example: Web Crawler
+
+``` go
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+// Fetcher defines interface for fetching url
+type Fetcher interface {
+	// Fetch returns the body of URL and
+	// a slice of URLs found on that page.
+	Fetch(url string) (body string, urls []string, err error)
+}
+
+// Crawl uses fetcher to recursively crawl
+// pages starting with url, to a maximum of depth.
+func Crawl(url string, depth int, fetcher Fetcher, visited map[string]bool, mutex *sync.Mutex, wg *sync.WaitGroup) {
+	defer wg.Done()
+	
+	if depth <= 0 {
+		return
+	}
+	
+	mutex.Lock()
+	defer mutex.Unlock()
+	if !visited[url] {
+		body, urls, err := fetcher.Fetch(url)
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Printf("found: %s %q\n", url, body)
+			wg.Add(len(urls))
+			for _, u := range urls {
+				go Crawl(u, depth-1, fetcher, visited, mutex, wg)
+			}
+		}
+		visited[url] = true
+	}
+	return
+}
+
+func main() {
+	wg := &sync.WaitGroup{}
+	var mutex = &sync.Mutex{}
+	visited := make(map[string]bool)
+	wg.Add(1)
+	go Crawl("http://golang.org/", 4, fetcher, visited, mutex, wg)
+
+	wg.Wait()
+}
+
+// fakeFetcher is Fetcher that returns canned results.
+type fakeFetcher map[string]*fakeResult
+
+type fakeResult struct {
+	body string
+	urls []string
+}
+
+func (f fakeFetcher) Fetch(url string) (string, []string, error) {
+	if res, ok := f[url]; ok {
+		return res.body, res.urls, nil
+	}
+	return "", nil, fmt.Errorf("not found: %s", url)
+}
+
+// fetcher is a populated fakeFetcher.
+var fetcher = fakeFetcher{
+	"http://golang.org/": &fakeResult{
+		"The Go Programming Language",
+		[]string{
+			"http://golang.org/pkg/",
+			"http://golang.org/cmd/",
+		},
+	},
+	"http://golang.org/pkg/": &fakeResult{
+		"Packages",
+		[]string{
+			"http://golang.org/",
+			"http://golang.org/cmd/",
+			"http://golang.org/pkg/fmt/",
+			"http://golang.org/pkg/os/",
+		},
+	},
+	"http://golang.org/pkg/fmt/": &fakeResult{
+		"Package fmt",
+		[]string{
+			"http://golang.org/",
+			"http://golang.org/pkg/",
+		},
+	},
+	"http://golang.org/pkg/os/": &fakeResult{
+		"Package os",
+		[]string{
+			"http://golang.org/",
+			"http://golang.org/pkg/",
+		},
+	},
+}
+```
