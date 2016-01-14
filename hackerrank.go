@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"math"
 	"os"
@@ -13,7 +14,7 @@ import (
 func readFirstIntLine() (int, *bufio.Reader) {
 	reader := bufio.NewReader(os.Stdin)
 	line, _ := reader.ReadString('\n')
-	x, _ := strconv.Atoi(strings.Trim(line, "\n"))
+	x, _ := strconv.Atoi(extractIntegerStr(line))
 	return x, reader
 }
 
@@ -34,6 +35,26 @@ func readNextStrLine(reader *bufio.Reader) string {
 func readNextIntsLine(reader *bufio.Reader) (rowInt []int) {
 	line, _ := reader.ReadString('\n')
 	return splitInt(strings.Trim(line, "\n"))
+}
+
+// Extract integer string from string
+func extractIntegerStr(s string) string {
+	var buffer bytes.Buffer
+	for _, c := range s {
+		if c == '-' || ('0' <= c && c <= '9') {
+			buffer.WriteRune(c)
+		}
+	}
+	return buffer.String()
+}
+
+// Read next line of text containing 2 numbers and return those two integers
+func readNext2Ints(reader *bufio.Reader) (x int, y int) {
+	line, _ := reader.ReadString('\n')
+	row := strings.Split(strings.Trim(line, "\n"), " ")
+	x, _ = strconv.Atoi(extractIntegerStr(row[0]))
+	y, _ = strconv.Atoi(extractIntegerStr(row[1]))
+	return
 }
 
 // Split a string containing space-separated list of integers
@@ -259,6 +280,7 @@ func sherlocksquares() {
 	}
 }
 
+// https://www.hackerrank.com/challenges/service-lane
 func servicelane() {
 	reader := bufio.NewReader(os.Stdin)
 	row := readNextIntsLine(reader)
@@ -275,6 +297,81 @@ func servicelane() {
 	}
 }
 
+// https://www.hackerrank.com/challenges/caesar-cipher-1
+func caesar() {
+	_, reader := readFirstIntLine()
+	s := readNextStrLine(reader)
+	k := readNextIntLine(reader)
+
+	intA, intZ := int('A'), int('Z')
+	inta, intz := int('a'), int('z')
+	var buffer bytes.Buffer
+	for _, p := range s {
+		if 'a' <= p && p <= 'z' {
+			c := int(p) + k
+			for c > intz {
+				c = inta + c - intz - 1
+			}
+			buffer.WriteRune(rune(c))
+		} else if 'A' <= p && p <= 'Z' {
+			c := int(p) + k
+			for c > intZ {
+				c = intA + c - intZ - 1
+			}
+			buffer.WriteRune(rune(c))
+		} else {
+			buffer.WriteRune(p)
+		}
+	}
+	fmt.Println(buffer.String())
+}
+
+// https://www.hackerrank.com/challenges/the-grid-search
+func gridsearch() {
+	t, reader := readFirstIntLine()
+	for k := 0; k < t; k++ {
+		// Read in grid
+		r, c := readNext2Ints(reader)
+		gridG := make([]string, r)
+		for i := 0; i < r; i++ {
+			gridG[i] = readNextStrLine(reader)
+		}
+
+		// Read in pattern
+		r2, c2 := readNext2Ints(reader)
+		patP := make([]string, r2)
+		for i := 0; i < r2; i++ {
+			patP[i] = readNextStrLine(reader)
+		}
+		// Search
+		found := false
+	SEARCH:
+		for i := 0; i < r-r2+1; i++ {
+			for j := 0; j < c-c2+1; j++ {
+				// Check current corner position
+				found = true
+			CHECK:
+				for p := 0; p < r2; p++ {
+					for q := 0; q < c2; q++ {
+						if gridG[p+i][q+j] != patP[p][q] {
+							found = false
+							break CHECK
+						}
+					}
+				}
+				if found {
+					break SEARCH
+				}
+			}
+		}
+		if found {
+			fmt.Println("YES")
+		} else {
+			fmt.Println("NO")
+		}
+	}
+}
+
 func main() {
-	servicelane()
+	gridsearch()
 }
